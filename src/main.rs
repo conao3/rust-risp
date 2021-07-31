@@ -65,7 +65,7 @@ fn tokenize(expr: String) -> Vec<String> {
         .collect()
 }
 
-fn parse<'a>(tokens: &'a [String]) -> Result<(RispExp, &'a [String]), RispErr> {
+fn parse(tokens: &[String]) -> Result<(RispExp, &[String]), RispErr> {
     let (token, rest) = tokens
         .split_first()
         .ok_or_else(|| RispErr::Reason("could not get token".to_string()))?;
@@ -76,7 +76,7 @@ fn parse<'a>(tokens: &'a [String]) -> Result<(RispExp, &'a [String]), RispErr> {
     }
 }
 
-fn read_seq<'a>(tokens: &'a [String]) -> Result<(RispExp, &'a [String]), RispErr> {
+fn read_seq(tokens: &[String]) -> Result<(RispExp, &[String]), RispErr> {
     let mut res: Vec<RispExp> = vec![];
     let mut xs = tokens;
     loop {
