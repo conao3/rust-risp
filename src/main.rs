@@ -68,7 +68,7 @@ fn tokenize(expr: String) -> Vec<String> {
 fn parse<'a>(tokens: &'a [String]) -> Result<(RispExp, &'a [String]), RispErr> {
     let (token, rest) = tokens
         .split_first()
-        .ok_or(RispErr::Reason("could not get token".to_string()))?;
+        .ok_or_else(|| RispErr::Reason("could not get token".to_string()))?;
     match &token[..] {
         "(" => read_seq(rest),
         ")" => Err(RispErr::Reason("unexpected `)`".to_string())),
@@ -82,7 +82,7 @@ fn read_seq<'a>(tokens: &'a [String]) -> Result<(RispExp, &'a [String]), RispErr
     loop {
         let (next_token, rest) = xs
             .split_first()
-            .ok_or(RispErr::Reason("could not find closing `)`".to_string()))?;
+            .ok_or_else(|| RispErr::Reason("could not find closing `)`".to_string()))?;
         if next_token == ")" {
             return Ok((RispExp::List(res), rest)); // skip `)`, head to the token after
         }
@@ -116,7 +116,7 @@ macro_rules! ensure_tonicity {
             let floats = parse_list_of_floats(args)?;
             let first = floats
                 .first()
-                .ok_or(RispErr::Reason("expected at least one number".to_string()))?;
+                .ok_or_else(|| RispErr::Reason("expected at least one number".to_string()))?;
             let rest = &floats[1..];
             fn f(prev: &f64, xs: &[f64]) -> bool {
                 match xs.first() {
@@ -147,7 +147,7 @@ fn default_env<'a>() -> RispEnv<'a> {
             let floats = parse_list_of_floats(args)?;
             let first = *floats
                 .first()
-                .ok_or(RispErr::Reason("expected at least one number".to_string()))?;
+                .ok_or_else(|| RispErr::Reason("expected at least one number".to_string()))?;
             let sum_of_rest = floats[1..].iter().fold(0.0, |sum, a| sum + a);
 
             Ok(RispExp::Number(first - sum_of_rest))
@@ -195,14 +195,14 @@ fn parse_single_float(exp: &RispExp) -> Result<f64, RispErr> {
 fn eval_if_args(arg_forms: &[RispExp], env: &mut RispEnv) -> Result<RispExp, RispErr> {
     let test_form = arg_forms
         .first()
-        .ok_or(RispErr::Reason("expected test form".to_string()))?;
+        .ok_or_else(|| RispErr::Reason("expected test form".to_string()))?;
     let test_eval = eval(test_form, env)?;
     match test_eval {
         RispExp::Bool(b) => {
             let form_idx = if b { 1 } else { 2 };
             let res_form = arg_forms
                 .get(form_idx)
-                .ok_or(RispErr::Reason(format!("expected form idx={}", form_idx)))?;
+                .ok_or_else(|| RispErr::Reason(format!("expected form idx={}", form_idx)))?;
             
 
             eval(res_form, env)
@@ -217,7 +217,7 @@ fn eval_if_args(arg_forms: &[RispExp], env: &mut RispEnv) -> Result<RispExp, Ris
 fn eval_def_args(arg_forms: &[RispExp], env: &mut RispEnv) -> Result<RispExp, RispErr> {
     let first_form = arg_forms
         .first()
-        .ok_or(RispErr::Reason("expected first form".to_string()))?;
+        .ok_or_else(|| RispErr::Reason("expected first form".to_string()))?;
     let first_str = match first_form {
         RispExp::Symbol(s) => Ok(s.clone()),
         _ => Err(RispErr::Reason(
@@ -226,7 +226,7 @@ fn eval_def_args(arg_forms: &[RispExp], env: &mut RispEnv) -> Result<RispExp, Ri
     }?;
     let second_form = arg_forms
         .get(1)
-        .ok_or(RispErr::Reason("expected second form".to_string()))?;
+        .ok_or_else(|| RispErr::Reason("expected second form".to_string()))?;
     if arg_forms.len() > 2 {
         return Err(RispErr::Reason("def can only have two forms ".to_string()));
     }
@@ -239,10 +239,10 @@ fn eval_def_args(arg_forms: &[RispExp], env: &mut RispEnv) -> Result<RispExp, Ri
 fn eval_lambda_args(arg_forms: &[RispExp]) -> Result<RispExp, RispErr> {
     let params_exp = arg_forms
         .first()
-        .ok_or(RispErr::Reason("expected args form".to_string()))?;
+        .ok_or_else(|| RispErr::Reason("expected args form".to_string()))?;
     let body_exp = arg_forms
         .get(1)
-        .ok_or(RispErr::Reason("expected second form".to_string()))?;
+        .ok_or_else(|| RispErr::Reason("expected second form".to_string()))?;
     if arg_forms.len() > 2 {
         return Err(RispErr::Reason(
             "fn definition can only have two forms ".to_string(),
@@ -329,7 +329,7 @@ fn eval_forms(arg_forms: &[RispExp], env: &mut RispEnv) -> Result<Vec<RispExp>, 
 fn eval(exp: &RispExp, env: &mut RispEnv) -> Result<RispExp, RispErr> {
     match exp {
         RispExp::Symbol(k) => {
-            env_get(k, env).ok_or(RispErr::Reason(format!("unexpected symbol k='{}'", k)))
+            env_get(k, env).ok_or_else(|| RispErr::Reason(format!("unexpected symbol k='{}'", k)))
         }
         RispExp::Bool(_a) => Ok(exp.clone()),
         RispExp::Number(_a) => Ok(exp.clone()),
@@ -337,7 +337,7 @@ fn eval(exp: &RispExp, env: &mut RispEnv) -> Result<RispExp, RispErr> {
         RispExp::List(list) => {
             let first_form = list
                 .first()
-                .ok_or(RispErr::Reason("expected a non-empty list".to_string()))?;
+                .ok_or_else(|| RispErr::Reason("expected a non-empty list".to_string()))?;
             let arg_forms = &list[1..];
             match eval_built_in_form(first_form, arg_forms, env) {
                 Some(res) => res,
