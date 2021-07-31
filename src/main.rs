@@ -155,7 +155,9 @@ fn default_env<'a>() -> RispEnv<'a> {
     );
     data.insert(
         "=".to_string(),
-        RispExp::Func(ensure_tonicity!(|a, b| a == b)),
+        RispExp::Func(ensure_tonicity!(
+            |a: &f64, b: &f64| (a - b).abs() < f64::EPSILON
+        )),
     );
     data.insert(
         ">".to_string(),
