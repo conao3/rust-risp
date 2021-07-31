@@ -4,6 +4,7 @@ use std::{fmt, io};
 
 #[derive(Clone)]
 enum RispExp {
+    Bool(bool),
     Symbol(String),
     Number(f64),
     List(Vec<RispExp>),
@@ -13,6 +14,7 @@ enum RispExp {
 impl fmt::Display for RispExp {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let str = match self {
+            RispExp::Bool(a) => a.to_string(),
             RispExp::Symbol(s) => s.clone(),
             RispExp::Number(n) => n.to_string(),
             RispExp::List(list) => {
@@ -34,6 +36,25 @@ enum RispErr {
 #[derive(Clone)]
 struct RispEnv {
     data: HashMap<String, RispExp>,
+}
+
+macro_rules! ensure_tonicity {
+    ($check_fn:expr) => {{
+        |args: &[RispExp]| -> Result<RispExp, RispErr> {
+            let floats = parse_list_of_floats(args)?;
+            let first = floats
+                .first()
+                .ok_or(RispErr::Reason("expected at least one number".to_string()))?;
+            let rest = &floats[1..];
+            fn f(prev: &f64, xs: &[f64]) -> bool {
+                match xs.first() {
+                    Some(x) => $check_fn(prev, x) && f(x, &xs[1..]),
+                    None => true,
+                }
+            }
+            Ok(RispExp::Bool(f(first, rest)))
+        }
+    }};
 }
 
 fn default_env() -> RispEnv {
@@ -59,6 +80,26 @@ fn default_env() -> RispEnv {
 
             Ok(RispExp::Number(first - sum_of_rest))
         }),
+    );
+    data.insert(
+        "=".to_string(),
+        RispExp::Func(ensure_tonicity!(|a, b| a == b)),
+    );
+    data.insert(
+        ">".to_string(),
+        RispExp::Func(ensure_tonicity!(|a, b| a > b)),
+    );
+    data.insert(
+        ">=".to_string(),
+        RispExp::Func(ensure_tonicity!(|a, b| a >= b)),
+    );
+    data.insert(
+        "<".to_string(),
+        RispExp::Func(ensure_tonicity!(|a, b| a < b)),
+    );
+    data.insert(
+        "<=".to_string(),
+        RispExp::Func(ensure_tonicity!(|a, b| a <= b)),
     );
 
     RispEnv { data }
@@ -100,10 +141,16 @@ fn read_seq<'a>(tokens: &'a [String]) -> Result<(RispExp, &'a [String]), RispErr
 }
 
 fn parse_atom(token: &str) -> RispExp {
-    let potential_float: Result<f64, ParseFloatError> = token.parse();
-    match potential_float {
-        Ok(v) => RispExp::Number(v),
-        Err(_) => RispExp::Symbol(token.to_string().clone()),
+    match token.as_ref() {
+        "true" => RispExp::Bool(true),
+        "false" => RispExp::Bool(false),
+        _ => {
+            let potential_float: Result<f64, ParseFloatError> = token.parse();
+            match potential_float {
+                Ok(v) => RispExp::Number(v),
+                Err(_) => RispExp::Symbol(token.to_string().clone()),
+            }
+        }
     }
 }
 
@@ -120,6 +167,7 @@ fn parse<'a>(tokens: &'a [String]) -> Result<(RispExp, &'a [String]), RispErr> {
 
 fn eval(exp: &RispExp, env: &mut RispEnv) -> Result<RispExp, RispErr> {
     match exp {
+        RispExp::Bool(_a) => Ok(exp.clone()),
         RispExp::Symbol(k) => env
             .data
             .get(k)
