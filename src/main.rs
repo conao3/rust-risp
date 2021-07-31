@@ -400,8 +400,8 @@ fn test_tokenize() {
     assert_eq!(tokenize("()".to_string()), ["(", ")"]);
 }
 
-#[test]
-fn test_parse() {
-    assert_eq!(parse("(+ 10 5)".to_string()), ["(", "+", "10", "5", ")"]);
-    assert_eq!(tokenize("()".to_string()), ["(", ")"]);
-}
+// #[test]
+// fn test_parse() {
+//     assert_eq!(parse("(+ 10 5)".to_string()), ["(", "+", "10", "5", ")"]);
+//     assert_eq!(tokenize("()".to_string()), ["(", ")"]);
+// }
