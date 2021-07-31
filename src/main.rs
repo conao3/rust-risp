@@ -205,7 +205,6 @@ fn eval_if_args(arg_forms: &[RispExp], env: &mut RispEnv) -> Result<RispExp, Ris
             let res_form = arg_forms
                 .get(form_idx)
                 .ok_or_else(|| RispErr::Reason(format!("expected form idx={}", form_idx)))?;
-            
 
             eval(res_form, env)
         }
