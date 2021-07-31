@@ -395,14 +395,77 @@ fn main() {
     }
 }
 
-#[test]
-fn test_tokenize() {
-    assert_eq!(tokenize("(+ 10 5)".to_string()), ["(", "+", "10", "5", ")"]);
-    assert_eq!(tokenize("()".to_string()), ["(", ")"]);
-}
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-// #[test]
-// fn test_parse() {
-//     assert_eq!(parse("(+ 10 5)".to_string()), ["(", "+", "10", "5", ")"]);
-//     assert_eq!(tokenize("()".to_string()), ["(", ")"]);
-// }
+    impl PartialEq for RispExp {
+        fn eq(&self, other: &Self) -> bool {
+            match (self, other) {
+                (RispExp::Bool(a), RispExp::Bool(b)) => a == b,
+                (RispExp::Symbol(a), RispExp::Symbol(b)) => a == b,
+                (RispExp::Number(a), RispExp::Number(b)) => a == b,
+                (RispExp::List(a), RispExp::List(b)) => a == b,
+                _ => false,
+            }
+        }
+    }
+
+    impl fmt::Debug for RispExp {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            match self {
+                RispExp::Bool(b) => f.debug_tuple("Bool").field(b).finish(),
+                RispExp::Symbol(s) => f.debug_tuple("Symbol").field(s).finish(),
+                RispExp::Number(n) => f.debug_tuple("Number").field(n).finish(),
+                RispExp::List(xs) => f.debug_tuple("List").field(xs).finish(),
+                RispExp::Func(_) => f.debug_tuple("Func").finish(),
+                RispExp::Lambda(_) => f.debug_tuple("Lambda").finish(),
+            }
+        }
+    }
+
+    #[test]
+    fn test_tokenize() {
+        assert_eq!(tokenize("(+ 10 5)".to_string()), ["(", "+", "10", "5", ")"]);
+        assert_eq!(tokenize("10".to_string()), ["10"]);
+        assert_eq!(tokenize("()".to_string()), ["(", ")"]);
+    }
+
+    #[test]
+    fn test_parse() {
+        let (exp, _) = parse(&tokenize("10".to_string())).unwrap();
+        assert_eq!(exp, RispExp::Number(10.0));
+
+        let (exp, _) = parse(&tokenize("+".to_string())).unwrap();
+        assert_eq!(exp, RispExp::Symbol("+".to_string()));
+
+        let (exp, _) = parse(&tokenize("(+ 10 5)".to_string())).unwrap();
+        assert_eq!(
+            exp,
+            RispExp::List(vec!(
+                RispExp::Symbol("+".to_string()),
+                RispExp::Number(10.0),
+                RispExp::Number(5.0),
+            ))
+        );
+
+        let (exp, _) = parse(&tokenize("(if (< 1 2) (+ 10 5) 1)".to_string())).unwrap();
+        assert_eq!(
+            exp,
+            RispExp::List(vec!(
+                RispExp::Symbol("if".to_string()),
+                RispExp::List(vec!(
+                    RispExp::Symbol("<".to_string()),
+                    RispExp::Number(1.0),
+                    RispExp::Number(2.0),
+                )),
+                RispExp::List(vec!(
+                    RispExp::Symbol("+".to_string()),
+                    RispExp::Number(10.0),
+                    RispExp::Number(5.0),
+                )),
+                RispExp::Number(1.0)
+            ))
+        );
+    }
+}
