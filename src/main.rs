@@ -482,5 +482,17 @@ mod tests {
                 RispExp::integer(1)
             ])
         );
+
+        let tokens = tokenize("(+ 10 5) 3 (+ 1 2)".to_string());
+        let (exp, rest) = parse(&tokens).unwrap();
+        assert_eq!(
+            exp,
+            RispExp::list([
+                RispExp::symbol("+"),
+                RispExp::integer(10),
+                RispExp::integer(5),
+            ])
+        );
+        assert_eq!(rest, ["3", "(", "+", "1", "2", ")"]);
     }
 }
