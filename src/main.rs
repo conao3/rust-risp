@@ -47,7 +47,7 @@ impl fmt::Display for RispExp {
             RispExp::Number(n) => n.to_string(),
             RispExp::List(list) => {
                 let xs: Vec<String> = list.iter().map(|x| x.to_string()).collect();
-                format!("({})", xs.join(","))
+                format!("({})", xs.join(", "))
             }
             RispExp::Func(_) => "Function {}".to_string(),
             RispExp::Lambda(_) => "Lambda {}".to_string(),
@@ -244,7 +244,7 @@ fn eval_def_args(arg_forms: &[RispExp], env: &mut RispEnv) -> Result<RispExp, Ri
         .get(1)
         .ok_or_else(|| RispErr::Reason("expected second form".to_string()))?;
     if arg_forms.len() > 2 {
-        return Err(RispErr::Reason("def can only have two forms ".to_string()));
+        return Err(RispErr::Reason("def can only have two forms".to_string()));
     }
     let second_eval = eval(second_form, env)?;
     env.data.insert(first_str, second_eval);
@@ -261,7 +261,7 @@ fn eval_lambda_args(arg_forms: &[RispExp]) -> Result<RispExp, RispErr> {
         .ok_or_else(|| RispErr::Reason("expected second form".to_string()))?;
     if arg_forms.len() > 2 {
         return Err(RispErr::Reason(
-            "fn definition can only have two forms ".to_string(),
+            "fn definition can only have two forms".to_string(),
         ));
     }
 
@@ -345,7 +345,7 @@ fn eval_forms(arg_forms: &[RispExp], env: &mut RispEnv) -> Result<Vec<RispExp>, 
 fn eval(exp: &RispExp, env: &mut RispEnv) -> Result<RispExp, RispErr> {
     match exp {
         RispExp::Symbol(k) => {
-            env_get(k, env).ok_or_else(|| RispErr::Reason(format!("unexpected symbol k='{}'", k)))
+            env_get(k, env).ok_or_else(|| RispErr::Reason(format!("unexpected symbol '{}'", k)))
         }
         RispExp::Bool(_a) => Ok(exp.clone()),
         RispExp::Number(_a) => Ok(exp.clone()),
