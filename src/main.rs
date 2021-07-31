@@ -18,6 +18,21 @@ enum RispExp {
     Lambda(RispLambda),
 }
 
+#[allow(dead_code)]
+impl RispExp {
+    fn symbol(symbol: impl Into<String>) -> Self {
+        Self::Symbol(symbol.into())
+    }
+
+    fn integer(num: impl Into<f64>) -> Self {
+        Self::Number(num.into())
+    }
+
+    fn list(list: impl Into<Vec<Self>>) -> Self {
+        Self::List(list.into())
+    }
+}
+
 #[derive(Clone)]
 struct RispLambda {
     params_exp: Rc<RispExp>,
@@ -434,38 +449,38 @@ mod tests {
     #[test]
     fn test_parse() {
         let (exp, _) = parse(&tokenize("10".to_string())).unwrap();
-        assert_eq!(exp, RispExp::Number(10.0));
+        assert_eq!(exp, RispExp::integer(10));
 
         let (exp, _) = parse(&tokenize("+".to_string())).unwrap();
-        assert_eq!(exp, RispExp::Symbol("+".to_string()));
+        assert_eq!(exp, RispExp::symbol("+"));
 
         let (exp, _) = parse(&tokenize("(+ 10 5)".to_string())).unwrap();
         assert_eq!(
             exp,
-            RispExp::List(vec!(
-                RispExp::Symbol("+".to_string()),
-                RispExp::Number(10.0),
-                RispExp::Number(5.0),
-            ))
+            RispExp::list([
+                RispExp::symbol("+"),
+                RispExp::integer(10),
+                RispExp::integer(5),
+            ])
         );
 
         let (exp, _) = parse(&tokenize("(if (< 1 2) (+ 10 5) 1)".to_string())).unwrap();
         assert_eq!(
             exp,
-            RispExp::List(vec!(
-                RispExp::Symbol("if".to_string()),
-                RispExp::List(vec!(
-                    RispExp::Symbol("<".to_string()),
-                    RispExp::Number(1.0),
-                    RispExp::Number(2.0),
-                )),
-                RispExp::List(vec!(
-                    RispExp::Symbol("+".to_string()),
-                    RispExp::Number(10.0),
-                    RispExp::Number(5.0),
-                )),
-                RispExp::Number(1.0)
-            ))
+            RispExp::list([
+                RispExp::symbol("if"),
+                RispExp::list([
+                    RispExp::symbol("<"),
+                    RispExp::integer(1),
+                    RispExp::integer(2),
+                ]),
+                RispExp::list([
+                    RispExp::symbol("+"),
+                    RispExp::integer(10),
+                    RispExp::integer(5),
+                ]),
+                RispExp::integer(1)
+            ])
         );
     }
 }
