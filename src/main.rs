@@ -84,7 +84,7 @@ fn parse(tokens: &[String]) -> Result<(RispExp, &[String]), RispErr> {
     let (token, rest) = tokens
         .split_first()
         .ok_or_else(|| RispErr::Reason("could not get token".to_string()))?;
-    match &token[..] {
+    match &**token {
         "(" => read_seq(rest),
         ")" => Err(RispErr::Reason("unexpected `)`".to_string())),
         _ => Ok((parse_atom(token), rest)),
