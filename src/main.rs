@@ -215,7 +215,7 @@ fn eval_if_args(arg_forms: &[RispExp], env: &mut RispEnv) -> Result<RispExp, Ris
     }
 }
 
-fn eval_def_args(arg_forms: &[RispExp], env: &mut RispEnv) -> Result<RispExp, RispErr> {
+fn eval_set_args(arg_forms: &[RispExp], env: &mut RispEnv) -> Result<RispExp, RispErr> {
     match arg_forms {
         [RispExp::Symbol(sym), val_form] => {
             let val = eval(val_form, env)?;
@@ -256,8 +256,8 @@ fn eval_built_in_form(
     match exp {
         RispExp::Symbol(s) => match s.as_ref() {
             "if" => Some(eval_if_args(arg_forms, env)),
-            "def" => Some(eval_def_args(arg_forms, env)),
-            "fn" => Some(eval_lambda_args(arg_forms)),
+            "set" => Some(eval_set_args(arg_forms, env)),
+            "lambda" => Some(eval_lambda_args(arg_forms)),
             _ => None,
         },
         _ => None,
