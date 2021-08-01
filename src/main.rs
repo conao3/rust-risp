@@ -232,22 +232,20 @@ fn eval_def_args(arg_forms: &[RispExp], env: &mut RispEnv) -> Result<RispExp, Ri
 }
 
 fn eval_lambda_args(arg_forms: &[RispExp]) -> Result<RispExp, RispErr> {
-    let params_exp = arg_forms
-        .first()
-        .ok_or_else(|| RispErr::Reason("expected args form".to_string()))?;
-    let body_exp = arg_forms
-        .get(1)
-        .ok_or_else(|| RispErr::Reason("expected second form".to_string()))?;
-    if arg_forms.len() > 2 {
-        return Err(RispErr::Reason(
-            "fn definition can only have two forms".to_string(),
-        ));
+    match arg_forms {
+        [RispExp::List(param_form), body_form] => {
+            Ok(RispExp::Lambda(RispLambda {
+                params_exp: Rc::new(RispExp::List(param_form.to_vec()).clone()),
+                body_exp: Rc::new(body_form.clone()),
+            }))
+        },
+        [_, _] => {
+            Err(RispErr::Reason("wrong type argument: expect list".to_string()))
+        },
+        _ => {
+            Err(RispErr::Reason("wrong number of arguments: expect 2".to_string()))
+        }
     }
-
-    Ok(RispExp::Lambda(RispLambda {
-        body_exp: Rc::new(body_exp.clone()),
-        params_exp: Rc::new(params_exp.clone()),
-    }))
 }
 
 fn eval_built_in_form(
