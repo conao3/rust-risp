@@ -202,24 +202,16 @@ fn parse_list_of_floats(args: &[RispExp]) -> Result<Vec<f64>, RispErr> {
 */
 
 fn eval_if_args(arg_forms: &[RispExp], env: &mut RispEnv) -> Result<RispExp, RispErr> {
-    let test_form = arg_forms
-        .first()
-        .ok_or_else(|| RispErr::Reason("expected test form".to_string()))?;
-
-    let test_eval = eval(test_form, env)?;
-    match test_eval {
-        RispExp::Bool(b) => {
-            let form_idx = if b { 1 } else { 2 };
-            let res_form = arg_forms
-                .get(form_idx)
-                .ok_or_else(|| RispErr::Reason(format!("expected form idx={}", form_idx)))?;
-
-            eval(res_form, env)
+    match arg_forms {
+        [cond_form, then_form, else_form] => {
+            let exp = if eval(cond_form, env)?.into() {
+                then_form
+            } else {
+                else_form
+            };
+            eval(exp, env)
         }
-        _ => Err(RispErr::Reason(format!(
-            "unexpected test form='{}'",
-            test_form.to_string()
-        ))),
+        _ => Err(RispErr::Reason("wrong number of arguments: expect 3".to_string())),
     }
 }
 
