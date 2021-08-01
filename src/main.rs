@@ -216,26 +216,19 @@ fn eval_if_args(arg_forms: &[RispExp], env: &mut RispEnv) -> Result<RispExp, Ris
 }
 
 fn eval_def_args(arg_forms: &[RispExp], env: &mut RispEnv) -> Result<RispExp, RispErr> {
-    let first_form = arg_forms
-        .first()
-        .ok_or_else(|| RispErr::Reason("expected first form".to_string()))?;
-    let first_str = match first_form {
-        RispExp::Symbol(s) => Ok(s.clone()),
-        _ => Err(RispErr::Reason(
-            "expected first form to be a symbol".to_string(),
-        )),
-    }?;
-    let second_form = arg_forms
-        .get(1)
-        .ok_or_else(|| RispErr::Reason("expected second form".to_string()))?;
-
-    if arg_forms.len() > 2 {
-        return Err(RispErr::Reason("def can only have two forms".to_string()));
+    match arg_forms {
+        [RispExp::Symbol(sym), val_form] => {
+            let val = eval(val_form, env)?;
+            env.data.insert(sym.clone(), val.clone());
+            Ok(val)
+        },
+        [_, _] => {
+            Err(RispErr::Reason("wrong type argument: expect symbol".to_string()))
+        },
+        _ => {
+            Err(RispErr::Reason("wrong number of arguments: expect 2".to_string()))
+        }
     }
-    let second_eval = eval(second_form, env)?;
-    env.data.insert(first_str, second_eval);
-
-    Ok(first_form.clone())
 }
 
 fn eval_lambda_args(arg_forms: &[RispExp]) -> Result<RispExp, RispErr> {
