@@ -57,7 +57,7 @@ impl fmt::Display for RispExp {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 enum RispErr {
     Reason(String),
 }
@@ -117,7 +117,10 @@ fn parse1(tokens: &[String]) -> Result<(RispExp, &[String]), RispErr> {
 fn parse(tokens: Vec<String>) -> Result<RispExp, RispErr> {
     let (exp, rest) = parse1(&tokens)?;
     if rest.len() > 0 {
-        return Err(RispErr::Reason(format!("Unconsumed token remains: {}", rest.join(", "))))
+        return Err(RispErr::Reason(format!(
+            "Unconsumed token remains: {}",
+            rest.join(", ")
+        )));
     }
     Ok(exp)
 }
@@ -486,15 +489,9 @@ mod tests {
             ])
         );
 
-        // let (exp, rest) = parse(tokenize("(+ 10 5) 3".to_string())).unwrap();
-        // assert_eq!(
-        //     exp,
-        //     RispExp::list([
-        //         RispExp::symbol("+"),
-        //         RispExp::integer(10),
-        //         RispExp::integer(5),
-        //     ])
-        // );
-        // assert_eq!(rest, ["3"]);
+        assert_eq!(
+            parse(tokenize("(+ 10 5) 3".to_string())),
+            Err(RispErr::Reason("Unconsumed token remains: 3".to_string()))
+        );
     }
 }
