@@ -133,27 +133,18 @@ fn parse(tokens: Vec<String>) -> Result<RispExp, RispErr> {
   Env
 */
 
-macro_rules! ensure_tonicity {
-    ($fn:expr) => {{
-        |args: &[RispExp]| -> Result<RispExp, RispErr> {
-            fn f(prev: &f64, xs: &[f64]) -> bool {
-                match xs.split_first() {
-                    Some((first, rest)) => $fn(prev, first) && f(first, rest),
-                    None => true,
-                }
-            }
-            let floats = parse_list_of_floats(args)?;
-            let (first, rest) = floats
-                .split_first()
-                .ok_or_else(|| RispErr::Reason("expected at least one number".to_string()))?;
-
-            Ok(RispExp::Bool(f(first, rest)))
-        }
-    }};
-}
-
 fn default_env<'a>() -> RispEnv<'a> {
+    macro_rules! pred {
+        ($fn:expr) => {
+            |args: &[RispExp]| -> Result<RispExp, RispErr> {
+                let floats = parse_list_of_floats(args)?;
+                Ok(RispExp::Bool(floats.windows(2).all(|w| $fn(w[0], w[1]))))
+            }
+        };
+    }
+
     let mut data: HashMap<String, RispExp> = HashMap::new();
+
     data.insert(
         "+".to_string(),
         RispExp::Func(|args: &[RispExp]| -> Result<RispExp, RispErr> {
@@ -176,26 +167,12 @@ fn default_env<'a>() -> RispEnv<'a> {
     );
     data.insert(
         "=".to_string(),
-        RispExp::Func(ensure_tonicity!(
-            |a: &f64, b: &f64| (a - b).abs() < f64::EPSILON
-        )),
+        RispExp::Func(pred!(|a: f64, b: f64| (a - b).abs() < f64::EPSILON)),
     );
-    data.insert(
-        ">".to_string(),
-        RispExp::Func(ensure_tonicity!(|a, b| a > b)),
-    );
-    data.insert(
-        ">=".to_string(),
-        RispExp::Func(ensure_tonicity!(|a, b| a >= b)),
-    );
-    data.insert(
-        "<".to_string(),
-        RispExp::Func(ensure_tonicity!(|a, b| a < b)),
-    );
-    data.insert(
-        "<=".to_string(),
-        RispExp::Func(ensure_tonicity!(|a, b| a <= b)),
-    );
+    data.insert(">".to_string(), RispExp::Func(pred!(|a, b| a > b)));
+    data.insert(">=".to_string(), RispExp::Func(pred!(|a, b| a >= b)));
+    data.insert("<".to_string(), RispExp::Func(pred!(|a, b| a < b)));
+    data.insert("<=".to_string(), RispExp::Func(pred!(|a, b| a <= b)));
 
     RispEnv { data, outer: None }
 }
