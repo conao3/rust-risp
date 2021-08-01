@@ -134,6 +134,17 @@ fn parse(tokens: Vec<String>) -> Result<RispExp, RispErr> {
 */
 
 fn default_env<'a>() -> RispEnv<'a> {
+    macro_rules! basic_op {
+        ($fn:expr) => {
+            |args: &[RispExp]| -> Result<RispExp, RispErr> {
+                let floats = parse_list_of_floats(args)?;
+                let (first, rest) = floats
+                    .split_first()
+                    .ok_or_else(|| RispErr::Reason("expected at least one number".to_string()))?;
+                Ok(RispExp::Number(rest.iter().fold(*first, $fn)))
+            }
+        };
+    }
     macro_rules! pred {
         ($fn:expr) => {
             |args: &[RispExp]| -> Result<RispExp, RispErr> {
@@ -145,26 +156,8 @@ fn default_env<'a>() -> RispEnv<'a> {
 
     let mut data: HashMap<String, RispExp> = HashMap::new();
 
-    data.insert(
-        "+".to_string(),
-        RispExp::Func(|args: &[RispExp]| -> Result<RispExp, RispErr> {
-            let floats = parse_list_of_floats(args)?;
-            let (first, rest) = floats
-                .split_first()
-                .ok_or_else(|| RispErr::Reason("expected at least one number".to_string()))?;
-            Ok(RispExp::Number(rest.iter().fold(*first, |acc, a| acc + a)))
-        }),
-    );
-    data.insert(
-        "-".to_string(),
-        RispExp::Func(|args: &[RispExp]| -> Result<RispExp, RispErr> {
-            let floats = parse_list_of_floats(args)?;
-            let (first, rest) = floats
-                .split_first()
-                .ok_or_else(|| RispErr::Reason("expected at least one number".to_string()))?;
-            Ok(RispExp::Number(rest.iter().fold(*first, |acc, a| acc - a)))
-        }),
-    );
+    data.insert("+".to_string(), RispExp::Func(basic_op!(|acc, a| acc + a)));
+    data.insert("-".to_string(), RispExp::Func(basic_op!(|acc, a| acc - a)));
     data.insert(
         "=".to_string(),
         RispExp::Func(pred!(|a: f64, b: f64| (a - b).abs() < f64::EPSILON)),
