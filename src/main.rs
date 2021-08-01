@@ -115,7 +115,10 @@ fn parse1(tokens: &[String]) -> Result<(RispExp, &[String]), RispErr> {
 }
 
 fn parse(tokens: Vec<String>) -> Result<RispExp, RispErr> {
-    let (exp, _) = parse1(&tokens)?;
+    let (exp, rest) = parse1(&tokens)?;
+    if rest.len() > 0 {
+        return Err(RispErr::Reason(format!("Unconsumed token remains: {}", rest.join(", "))))
+    }
     Ok(exp)
 }
 
