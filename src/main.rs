@@ -84,6 +84,7 @@ fn parse(tokens: &[String]) -> Result<(RispExp, &[String]), RispErr> {
     let (token, rest) = tokens
         .split_first()
         .ok_or_else(|| RispErr::Reason("could not get token".to_string()))?;
+
     match &**token {
         "(" => read_seq(rest),
         ")" => Err(RispErr::Reason("unexpected `)`".to_string())),
@@ -98,6 +99,7 @@ fn read_seq(tokens: &[String]) -> Result<(RispExp, &[String]), RispErr> {
         let (next_token, rest) = xs
             .split_first()
             .ok_or_else(|| RispErr::Reason("could not find closing `)`".to_string()))?;
+
         if next_token == ")" {
             return Ok((RispExp::List(res), rest)); // skip `)`, head to the token after
         }
@@ -213,6 +215,7 @@ fn eval_if_args(arg_forms: &[RispExp], env: &mut RispEnv) -> Result<RispExp, Ris
     let test_form = arg_forms
         .first()
         .ok_or_else(|| RispErr::Reason("expected test form".to_string()))?;
+
     let test_eval = eval(test_form, env)?;
     match test_eval {
         RispExp::Bool(b) => {
@@ -243,6 +246,7 @@ fn eval_def_args(arg_forms: &[RispExp], env: &mut RispEnv) -> Result<RispExp, Ri
     let second_form = arg_forms
         .get(1)
         .ok_or_else(|| RispErr::Reason("expected second form".to_string()))?;
+
     if arg_forms.len() > 2 {
         return Err(RispErr::Reason("def can only have two forms".to_string()));
     }
