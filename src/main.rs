@@ -158,14 +158,16 @@ fn default_env<'a>() -> RispEnv<'a> {
 
     data.insert("+".to_string(), RispExp::Func(basic_op!(|acc, a| acc + a)));
     data.insert("-".to_string(), RispExp::Func(basic_op!(|acc, a| acc - a)));
+    data.insert("*".to_string(), RispExp::Func(basic_op!(|acc, a| acc * a)));
+    data.insert("/".to_string(), RispExp::Func(basic_op!(|acc, a| acc / a)));
+    data.insert(">".to_string(), RispExp::Func(pred!(|a, b| a > b)));
+    data.insert("<".to_string(), RispExp::Func(pred!(|a, b| a < b)));
+    data.insert(">=".to_string(), RispExp::Func(pred!(|a, b| a >= b)));
+    data.insert("<=".to_string(), RispExp::Func(pred!(|a, b| a <= b)));
     data.insert(
         "=".to_string(),
         RispExp::Func(pred!(|a: f64, b: f64| (a - b).abs() < f64::EPSILON)),
     );
-    data.insert(">".to_string(), RispExp::Func(pred!(|a, b| a > b)));
-    data.insert(">=".to_string(), RispExp::Func(pred!(|a, b| a >= b)));
-    data.insert("<".to_string(), RispExp::Func(pred!(|a, b| a < b)));
-    data.insert("<=".to_string(), RispExp::Func(pred!(|a, b| a <= b)));
 
     RispEnv { data, outer: None }
 }
