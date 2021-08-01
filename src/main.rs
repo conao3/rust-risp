@@ -145,6 +145,10 @@ fn parse(tokens: Vec<String>) -> Result<RispExp, RispErr> {
     Ok(exp)
 }
 
+fn read(expr: String) -> Result<RispExp, RispErr> {
+    parse(tokenize(expr))
+}
+
 /*
   Env
 */
@@ -342,34 +346,37 @@ fn eval(exp: &RispExp, env: &mut RispEnv) -> Result<RispExp, RispErr> {
   Repl
 */
 
-fn parse_eval(expr: String, env: &mut RispEnv) -> Result<RispExp, RispErr> {
-    let parsed_exp = parse(tokenize(expr))?;
-    let evaled_exp = eval(&parsed_exp, env)?;
-
-    Ok(evaled_exp)
-}
-
-fn slurp_expr() -> String {
+fn repl_read() -> Result<RispExp, RispErr> {
     let mut expr = String::new();
 
     io::stdin()
         .read_line(&mut expr)
         .expect("Failed to read line");
 
-    expr
+    read(expr)
+}
+
+fn repl_eval(read_res: Result<RispExp, RispErr>, env: &mut RispEnv) -> Result<RispExp, RispErr> {
+    let exp = read_res?;
+
+    Ok(eval(&exp, env)?)
+}
+
+fn repl_print(eval_res: Result<RispExp, RispErr>) {
+    match eval_res {
+        Ok(res) => println!(";;=> {}", res),
+        Err(e) => match e {
+            RispErr::Reason(msg) => println!(";;[ERROR]=> {}", msg),
+        },
+    }
 }
 
 fn main() {
     let env = &mut default_env();
+
     loop {
         println!("risp>");
-        let expr = slurp_expr();
-        match parse_eval(expr, env) {
-            Ok(res) => println!(";;=> {}", res),
-            Err(e) => match e {
-                RispErr::Reason(msg) => println!(";;[ERROR]=> {}", msg),
-            },
-        }
+        repl_print(repl_eval(repl_read(), env))
     }
 }
 
