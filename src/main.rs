@@ -33,6 +33,22 @@ impl RispExp {
     }
 }
 
+impl From<&'_ RispExp> for bool {
+    fn from(exp: &RispExp) -> Self {
+        match exp {
+            RispExp::Bool(p) => *p,
+            RispExp::List(l) => !l.is_empty(),
+            _ => true,
+        }
+    }
+}
+
+impl From<RispExp> for bool {
+    fn from(exp: RispExp) -> Self {
+        (&exp).into()
+    }
+}
+
 #[derive(Clone)]
 struct RispLambda {
     params_exp: Rc<RispExp>,
