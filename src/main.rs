@@ -89,7 +89,11 @@ fn parse1(tokens: &[String]) -> Result<(RispExp, &[String]), RispErr> {
         "(" => {
             let mut res: Vec<RispExp> = vec![];
             let mut lrest = rest;
-            while lrest[0] != ")" {
+            while lrest
+                .first()
+                .ok_or_else(|| RispErr::Reason("missing `)".to_string()))?
+                != ")"
+            {
                 let (exp, new_lrest) = parse1(lrest)?;
                 res.push(exp);
                 lrest = new_lrest;
