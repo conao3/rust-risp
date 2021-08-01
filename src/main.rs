@@ -80,47 +80,43 @@ fn tokenize(expr: String) -> Vec<String> {
         .collect()
 }
 
-fn parse(tokens: Vec<String>) -> Result<(RispExp, Vec<String>), RispErr> {
+fn parse1(tokens: &[String]) -> Result<(RispExp, &[String]), RispErr> {
     let (token, rest) = tokens
         .split_first()
-        .ok_or_else(|| RispErr::Reason("could not get token".to_string()))?;
+        .ok_or_else(|| RispErr::Reason("unexpected EOF".to_string()))?;
 
     match &**token {
-        "(" => read_seq(rest.into()),
-        ")" => Err(RispErr::Reason("unexpected `)`".to_string())),
-        _ => Ok((parse_atom(token), rest.into())),
-    }
-}
-
-fn read_seq(tokens: Vec<String>) -> Result<(RispExp, Vec<String>), RispErr> {
-    let mut res: Vec<RispExp> = vec![];
-    let mut xs = tokens;
-    loop {
-        let (next_token, rest) = xs
-            .split_first()
-            .ok_or_else(|| RispErr::Reason("could not find closing `)`".to_string()))?;
-
-        if next_token == ")" {
-            return Ok((RispExp::List(res), rest.into())); // skip `)`, head to the token after
-        }
-        let (exp, new_xs) = parse(xs)?;
-        res.push(exp);
-        xs = new_xs;
-    }
-}
-
-fn parse_atom(token: &str) -> RispExp {
-    match token {
-        "true" => RispExp::Bool(true),
-        "false" => RispExp::Bool(false),
-        _ => {
-            let potential_float: Result<f64, ParseFloatError> = token.parse();
-            match potential_float {
-                Ok(v) => RispExp::Number(v),
-                Err(_) => RispExp::Symbol(token.to_string()),
+        "(" => {
+            let mut res: Vec<RispExp> = vec![];
+            let mut lrest = rest;
+            while lrest[0] != ")" {
+                let (exp, new_lrest) = parse1(lrest)?;
+                res.push(exp);
+                lrest = new_lrest;
             }
+            Ok((RispExp::list(res), &lrest[1..]))
         }
+        ")" => Err(RispErr::Reason("unexpected `)`".to_string())),
+        _ => Ok((
+            match &**token {
+                "true" => RispExp::Bool(true),
+                "false" => RispExp::Bool(false),
+                _ => {
+                    let potential_float: Result<f64, ParseFloatError> = token.parse();
+                    match potential_float {
+                        Ok(v) => RispExp::Number(v),
+                        Err(_) => RispExp::Symbol(token.to_string()),
+                    }
+                }
+            },
+            rest,
+        )),
     }
+}
+
+fn parse(tokens: Vec<String>) -> Result<RispExp, RispErr> {
+    let (exp, _) = parse1(&tokens)?;
+    Ok(exp)
 }
 
 /*
@@ -384,7 +380,7 @@ fn eval(exp: &RispExp, env: &mut RispEnv) -> Result<RispExp, RispErr> {
 */
 
 fn parse_eval(expr: String, env: &mut RispEnv) -> Result<RispExp, RispErr> {
-    let (parsed_exp, _) = parse(tokenize(expr))?;
+    let parsed_exp = parse(tokenize(expr))?;
     let evaled_exp = eval(&parsed_exp, env)?;
 
     Ok(evaled_exp)
@@ -452,13 +448,13 @@ mod tests {
 
     #[test]
     fn test_parse() {
-        let (exp, _) = parse(tokenize("10".to_string())).unwrap();
+        let exp = parse(tokenize("10".to_string())).unwrap();
         assert_eq!(exp, RispExp::integer(10));
 
-        let (exp, _) = parse(tokenize("+".to_string())).unwrap();
+        let exp = parse(tokenize("+".to_string())).unwrap();
         assert_eq!(exp, RispExp::symbol("+"));
 
-        let (exp, _) = parse(tokenize("(+ 10 5)".to_string())).unwrap();
+        let exp = parse(tokenize("(+ 10 5)".to_string())).unwrap();
         assert_eq!(
             exp,
             RispExp::list([
@@ -468,7 +464,7 @@ mod tests {
             ])
         );
 
-        let (exp, _) = parse(tokenize("(if (< 1 2) (+ 10 5) 1)".to_string())).unwrap();
+        let exp = parse(tokenize("(if (< 1 2) (+ 10 5) 1)".to_string())).unwrap();
         assert_eq!(
             exp,
             RispExp::list([
@@ -487,15 +483,15 @@ mod tests {
             ])
         );
 
-        let (exp, rest) = parse(tokenize("(+ 10 5) 3".to_string())).unwrap();
-        assert_eq!(
-            exp,
-            RispExp::list([
-                RispExp::symbol("+"),
-                RispExp::integer(10),
-                RispExp::integer(5),
-            ])
-        );
-        assert_eq!(rest, ["3"]);
+        // let (exp, rest) = parse(tokenize("(+ 10 5) 3".to_string())).unwrap();
+        // assert_eq!(
+        //     exp,
+        //     RispExp::list([
+        //         RispExp::symbol("+"),
+        //         RispExp::integer(10),
+        //         RispExp::integer(5),
+        //     ])
+        // );
+        // assert_eq!(rest, ["3"]);
     }
 }
