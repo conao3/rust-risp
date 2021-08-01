@@ -211,7 +211,9 @@ fn eval_if_args(arg_forms: &[RispExp], env: &mut RispEnv) -> Result<RispExp, Ris
             };
             eval(exp, env)
         }
-        _ => Err(RispErr::Reason("wrong number of arguments: expect 3".to_string())),
+        _ => Err(RispErr::Reason(
+            "wrong number of arguments: expect 3".to_string(),
+        )),
     }
 }
 
@@ -221,30 +223,28 @@ fn eval_set_args(arg_forms: &[RispExp], env: &mut RispEnv) -> Result<RispExp, Ri
             let val = eval(val_form, env)?;
             env.data.insert(sym.clone(), val.clone());
             Ok(val)
-        },
-        [_, _] => {
-            Err(RispErr::Reason("wrong type argument: expect symbol".to_string()))
-        },
-        _ => {
-            Err(RispErr::Reason("wrong number of arguments: expect 2".to_string()))
         }
+        [_, _] => Err(RispErr::Reason(
+            "wrong type argument: expect symbol".to_string(),
+        )),
+        _ => Err(RispErr::Reason(
+            "wrong number of arguments: expect 2".to_string(),
+        )),
     }
 }
 
 fn eval_lambda_args(arg_forms: &[RispExp]) -> Result<RispExp, RispErr> {
     match arg_forms {
-        [RispExp::List(param_form), body_form] => {
-            Ok(RispExp::Lambda(RispLambda {
-                params_exp: Rc::new(RispExp::List(param_form.to_vec()).clone()),
-                body_exp: Rc::new(body_form.clone()),
-            }))
-        },
-        [_, _] => {
-            Err(RispErr::Reason("wrong type argument: expect list".to_string()))
-        },
-        _ => {
-            Err(RispErr::Reason("wrong number of arguments: expect 2".to_string()))
-        }
+        [RispExp::List(param_form), body_form] => Ok(RispExp::Lambda(RispLambda {
+            params_exp: Rc::new(RispExp::List(param_form.to_vec()).clone()),
+            body_exp: Rc::new(body_form.clone()),
+        })),
+        [_, _] => Err(RispErr::Reason(
+            "wrong type argument: expect list".to_string(),
+        )),
+        _ => Err(RispErr::Reason(
+            "wrong number of arguments: expect 2".to_string(),
+        )),
     }
 }
 
