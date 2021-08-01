@@ -130,19 +130,19 @@ fn parse(tokens: Vec<String>) -> Result<RispExp, RispErr> {
 */
 
 macro_rules! ensure_tonicity {
-    ($check_fn:expr) => {{
+    ($fn:expr) => {{
         |args: &[RispExp]| -> Result<RispExp, RispErr> {
-            let floats = parse_list_of_floats(args)?;
-            let first = floats
-                .first()
-                .ok_or_else(|| RispErr::Reason("expected at least one number".to_string()))?;
-            let rest = &floats[1..];
             fn f(prev: &f64, xs: &[f64]) -> bool {
-                match xs.first() {
-                    Some(x) => $check_fn(prev, x) && f(x, &xs[1..]),
+                match xs.split_first() {
+                    Some((first, rest)) => $fn(prev, first) && f(first, rest),
                     None => true,
                 }
             }
+            let floats = parse_list_of_floats(args)?;
+            let (first, rest) = floats
+                .split_first()
+                .ok_or_else(|| RispErr::Reason("expected at least one number".to_string()))?;
+
             Ok(RispExp::Bool(f(first, rest)))
         }
     }};
@@ -153,23 +153,21 @@ fn default_env<'a>() -> RispEnv<'a> {
     data.insert(
         "+".to_string(),
         RispExp::Func(|args: &[RispExp]| -> Result<RispExp, RispErr> {
-            let sum = parse_list_of_floats(args)?
-                .iter()
-                .fold(0.0, |sum, a| sum + a);
-
-            Ok(RispExp::Number(sum))
+            let floats = parse_list_of_floats(args)?;
+            let (first, rest) = floats
+                .split_first()
+                .ok_or_else(|| RispErr::Reason("expected at least one number".to_string()))?;
+            Ok(RispExp::Number(rest.iter().fold(*first, |acc, a| acc + a)))
         }),
     );
     data.insert(
         "-".to_string(),
         RispExp::Func(|args: &[RispExp]| -> Result<RispExp, RispErr> {
             let floats = parse_list_of_floats(args)?;
-            let first = *floats
-                .first()
+            let (first, rest) = floats
+                .split_first()
                 .ok_or_else(|| RispErr::Reason("expected at least one number".to_string()))?;
-            let sum_of_rest = floats[1..].iter().fold(0.0, |sum, a| sum + a);
-
-            Ok(RispExp::Number(first - sum_of_rest))
+            Ok(RispExp::Number(rest.iter().fold(*first, |acc, a| acc - a)))
         }),
     );
     data.insert(
@@ -199,14 +197,12 @@ fn default_env<'a>() -> RispEnv<'a> {
 }
 
 fn parse_list_of_floats(args: &[RispExp]) -> Result<Vec<f64>, RispErr> {
-    args.iter().map(|x| parse_single_float(x)).collect()
-}
-
-fn parse_single_float(exp: &RispExp) -> Result<f64, RispErr> {
-    match exp {
-        RispExp::Number(num) => Ok(*num),
-        _ => Err(RispErr::Reason("expected a number".to_string())),
-    }
+    args.iter()
+        .map(|x| match x {
+            RispExp::Number(x) => Ok(*x),
+            _ => Err(RispErr::Reason("expected a number".to_string())),
+        })
+        .collect()
 }
 
 /*
