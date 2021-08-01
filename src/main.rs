@@ -80,19 +80,19 @@ fn tokenize(expr: String) -> Vec<String> {
         .collect()
 }
 
-fn parse(tokens: &[String]) -> Result<(RispExp, &[String]), RispErr> {
+fn parse(tokens: Vec<String>) -> Result<(RispExp, Vec<String>), RispErr> {
     let (token, rest) = tokens
         .split_first()
         .ok_or_else(|| RispErr::Reason("could not get token".to_string()))?;
 
     match &**token {
-        "(" => read_seq(rest),
+        "(" => read_seq(rest.into()),
         ")" => Err(RispErr::Reason("unexpected `)`".to_string())),
-        _ => Ok((parse_atom(token), rest)),
+        _ => Ok((parse_atom(token), rest.into())),
     }
 }
 
-fn read_seq(tokens: &[String]) -> Result<(RispExp, &[String]), RispErr> {
+fn read_seq(tokens: Vec<String>) -> Result<(RispExp, Vec<String>), RispErr> {
     let mut res: Vec<RispExp> = vec![];
     let mut xs = tokens;
     loop {
@@ -101,7 +101,7 @@ fn read_seq(tokens: &[String]) -> Result<(RispExp, &[String]), RispErr> {
             .ok_or_else(|| RispErr::Reason("could not find closing `)`".to_string()))?;
 
         if next_token == ")" {
-            return Ok((RispExp::List(res), rest)); // skip `)`, head to the token after
+            return Ok((RispExp::List(res), rest.into())); // skip `)`, head to the token after
         }
         let (exp, new_xs) = parse(xs)?;
         res.push(exp);
@@ -384,7 +384,7 @@ fn eval(exp: &RispExp, env: &mut RispEnv) -> Result<RispExp, RispErr> {
 */
 
 fn parse_eval(expr: String, env: &mut RispEnv) -> Result<RispExp, RispErr> {
-    let (parsed_exp, _) = parse(&tokenize(expr))?;
+    let (parsed_exp, _) = parse(tokenize(expr))?;
     let evaled_exp = eval(&parsed_exp, env)?;
 
     Ok(evaled_exp)
@@ -452,13 +452,13 @@ mod tests {
 
     #[test]
     fn test_parse() {
-        let (exp, _) = parse(&tokenize("10".to_string())).unwrap();
+        let (exp, _) = parse(tokenize("10".to_string())).unwrap();
         assert_eq!(exp, RispExp::integer(10));
 
-        let (exp, _) = parse(&tokenize("+".to_string())).unwrap();
+        let (exp, _) = parse(tokenize("+".to_string())).unwrap();
         assert_eq!(exp, RispExp::symbol("+"));
 
-        let (exp, _) = parse(&tokenize("(+ 10 5)".to_string())).unwrap();
+        let (exp, _) = parse(tokenize("(+ 10 5)".to_string())).unwrap();
         assert_eq!(
             exp,
             RispExp::list([
@@ -468,7 +468,7 @@ mod tests {
             ])
         );
 
-        let (exp, _) = parse(&tokenize("(if (< 1 2) (+ 10 5) 1)".to_string())).unwrap();
+        let (exp, _) = parse(tokenize("(if (< 1 2) (+ 10 5) 1)".to_string())).unwrap();
         assert_eq!(
             exp,
             RispExp::list([
@@ -487,8 +487,7 @@ mod tests {
             ])
         );
 
-        let tokens = tokenize("(+ 10 5) 3 (+ 1 2)".to_string());
-        let (exp, rest) = parse(&tokens).unwrap();
+        let (exp, rest) = parse(tokenize("(+ 10 5) 3".to_string())).unwrap();
         assert_eq!(
             exp,
             RispExp::list([
@@ -497,6 +496,6 @@ mod tests {
                 RispExp::integer(5),
             ])
         );
-        assert_eq!(rest, ["3", "(", "+", "1", "2", ")"]);
+        assert_eq!(rest, ["3"]);
     }
 }
