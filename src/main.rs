@@ -233,7 +233,7 @@ fn eval_set_args(arg_forms: &[RispExp], env: &mut RispEnv) -> Result<RispExp, Ri
     }
 }
 
-fn eval_lambda_args(arg_forms: &[RispExp]) -> Result<RispExp, RispErr> {
+fn eval_lambda_args(arg_forms: &[RispExp], _env: &mut RispEnv) -> Result<RispExp, RispErr> {
     match arg_forms {
         [RispExp::List(param_form), body_form] => Ok(RispExp::Lambda(RispLambda {
             params_exp: Rc::new(RispExp::List(param_form.to_vec()).clone()),
@@ -248,20 +248,6 @@ fn eval_lambda_args(arg_forms: &[RispExp]) -> Result<RispExp, RispErr> {
     }
 }
 
-fn eval_built_in_form(
-    exp: &RispExp,
-    arg_forms: &[RispExp],
-    env: &mut RispEnv,
-) -> Option<Result<RispExp, RispErr>> {
-    match exp {
-        RispExp::Symbol(s) => match s.as_ref() {
-            "if" => Some(eval_if_args(arg_forms, env)),
-            "set" => Some(eval_set_args(arg_forms, env)),
-            "lambda" => Some(eval_lambda_args(arg_forms)),
-            _ => None,
-        },
-        _ => None,
-    }
 }
 
 fn env_get(k: &str, env: &RispEnv) -> Option<RispExp> {
@@ -327,22 +313,24 @@ fn eval(exp: &RispExp, env: &mut RispEnv) -> Result<RispExp, RispErr> {
         RispExp::Bool(_a) => Ok(exp.clone()),
         RispExp::Number(_a) => Ok(exp.clone()),
 
-        RispExp::List(list) => {
-            let first_form = list
-                .first()
+        RispExp::List(list_form) => {
+            let (first_form, rest) = list_form
+                .split_first()
                 .ok_or_else(|| RispErr::Reason("expected a non-empty list".to_string()))?;
-            let arg_forms = &list[1..];
-            match eval_built_in_form(first_form, arg_forms, env) {
-                Some(res) => res,
-                None => {
+
+            match first_form {
+                RispExp::Symbol(s) if s == "if" => eval_if_args(rest, env),
+                RispExp::Symbol(s) if s == "set" => eval_set_args(rest, env),
+                RispExp::Symbol(s) if s == "lambda" => eval_lambda_args(rest, env),
+                _ => {
                     let first_eval = eval(first_form, env)?;
                     match first_eval {
-                        RispExp::Func(f) => f(&eval_forms(arg_forms, env)?),
+                        RispExp::Func(f) => f(&eval_forms(rest, env)?),
                         RispExp::Lambda(lambda) => {
-                            let new_env = &mut env_for_lambda(lambda.params_exp, arg_forms, env)?;
+                            let new_env = &mut env_for_lambda(lambda.params_exp, rest, env)?;
                             eval(&lambda.body_exp, new_env)
                         }
-                        _ => Err(RispErr::Reason("first form must be a function".to_string())),
+                        _ => Err(RispErr::Reason("invalid function".to_string())),
                     }
                 }
             }
