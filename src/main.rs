@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::fmt;
 use std::io;
+use std::io::Write;
 use std::num::ParseFloatError;
 use std::rc::Rc;
 
@@ -375,7 +376,8 @@ fn main() {
     let env = &mut default_env();
 
     loop {
-        println!("risp>");
+        print!("risp> ");
+        io::stdout().flush().unwrap();
         repl_print(repl_eval(repl_read(), env))
     }
 }
