@@ -1,7 +1,7 @@
+use rustyline::error::ReadlineError;
+use rustyline::Editor;
 use std::collections::HashMap;
 use std::fmt;
-use std::io;
-use std::io::Write;
 use std::num::ParseFloatError;
 use std::rc::Rc;
 
@@ -347,16 +347,6 @@ fn eval(exp: &RispExp, env: &mut RispEnv) -> Result<RispExp, RispErr> {
   Repl
 */
 
-fn repl_read() -> Result<RispExp, RispErr> {
-    let mut expr = String::new();
-
-    io::stdin()
-        .read_line(&mut expr)
-        .expect("Failed to read line");
-
-    read(expr)
-}
-
 fn repl_eval(read_res: Result<RispExp, RispErr>, env: &mut RispEnv) -> Result<RispExp, RispErr> {
     let exp = read_res?;
 
@@ -373,13 +363,34 @@ fn repl_print(eval_res: Result<RispExp, RispErr>) {
 }
 
 fn main() {
+    let mut rl = Editor::<()>::new();
+    if rl.load_history("history.txt").is_err() {
+        println!("No previous history")
+    }
     let env = &mut default_env();
 
     loop {
-        print!("risp> ");
-        io::stdout().flush().unwrap();
-        repl_print(repl_eval(repl_read(), env))
+        let readline = rl.readline("risp> ");
+        match readline {
+            Ok(line) => {
+                rl.add_history_entry(line.as_str());
+                repl_print(repl_eval(read(line), env))
+            }
+            Err(ReadlineError::Interrupted) => {
+                println!("CTRL-C");
+                break;
+            }
+            Err(ReadlineError::Eof) => {
+                println!("CTRL-D");
+                break;
+            }
+            Err(err) => {
+                println!("Error: {:?}", err);
+                break;
+            }
+        }
     }
+    rl.save_history("history.txt").unwrap();
 }
 
 #[cfg(test)]

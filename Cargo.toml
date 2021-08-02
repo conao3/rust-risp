@@ -5,3 +5,4 @@ authors = ["Naoya Yamashita <conao3@gmail.com>"]
 edition = "2018"
 
 [dependencies]
+rustyline = "8.2.0"
