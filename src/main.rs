@@ -1,4 +1,3 @@
-use rustyline::error::ReadlineError;
 use rustyline::Editor;
 use std::collections::HashMap;
 use std::fmt;
@@ -370,24 +369,11 @@ fn main() {
     let env = &mut default_env();
 
     loop {
-        let readline = rl.readline("risp> ");
-        match readline {
-            Ok(line) => {
-                rl.add_history_entry(line.as_str());
-                repl_print(repl_eval(read(line), env))
-            }
-            Err(ReadlineError::Interrupted) => {
-                println!("CTRL-C");
-                break;
-            }
-            Err(ReadlineError::Eof) => {
-                println!("CTRL-D");
-                break;
-            }
-            Err(err) => {
-                println!("Error: {:?}", err);
-                break;
-            }
+        if let Ok(line) = rl.readline("risp> ") {
+            rl.add_history_entry(line.as_str());
+            repl_print(repl_eval(read(line), env));
+        } else {
+            break;
         }
     }
     rl.save_history("history.txt").unwrap();
