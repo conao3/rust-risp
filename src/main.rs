@@ -155,7 +155,7 @@ fn read(expr: String) -> Result<RispExp, RispErr> {
 
 fn default_env<'a>() -> RispEnv<'a> {
     macro_rules! basic_op {
-        ($fn:expr) => {
+        ($fn: expr) => {
             |args: &[RispExp]| -> Result<RispExp, RispErr> {
                 let floats = parse_list_of_floats(args)?;
                 let (first, rest) = floats
@@ -166,7 +166,7 @@ fn default_env<'a>() -> RispEnv<'a> {
         };
     }
     macro_rules! pred {
-        ($fn:expr) => {
+        ($fn: expr) => {
             |args: &[RispExp]| -> Result<RispExp, RispErr> {
                 let floats = parse_list_of_floats(args)?;
                 Ok(RispExp::Bool(floats.windows(2).all(|w| $fn(w[0], w[1]))))
