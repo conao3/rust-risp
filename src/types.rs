@@ -12,7 +12,6 @@ pub enum RispExp {
     Lambda(RispLambda),
 }
 
-#[allow(dead_code)]
 impl RispExp {
     pub fn symbol(symbol: impl Into<String>) -> Self {
         Self::Symbol(symbol.into())
