@@ -1,9 +1,8 @@
+use risp::env::default_env;
+use risp::parser::read;
+use risp::repl::repl_eval;
+use risp::repl::repl_print;
 use rustyline::Editor;
-
-use risp::repl_eval;
-use risp::repl_print;
-use risp::default_env;
-use risp::read;
 
 fn main() {
     let mut rl = Editor::<()>::new();
