@@ -2,10 +2,10 @@ use risp::env::default_env;
 use risp::parser::read;
 use risp::repl::repl_eval;
 use risp::repl::repl_print;
-use rustyline::Editor;
+use rustyline::DefaultEditor;
 
 fn main() {
-    let mut rl = Editor::<()>::new();
+    let mut rl = DefaultEditor::new().unwrap();
     if rl.load_history("history.txt").is_err() {
         println!("No previous history")
     }
@@ -13,7 +13,7 @@ fn main() {
 
     loop {
         if let Ok(line) = rl.readline("risp> ") {
-            rl.add_history_entry(line.as_str());
+            let _ = rl.add_history_entry(line.as_str());
             repl_print(repl_eval(read(line), env));
         } else {
             break;
